@@ -2,4 +2,4 @@
 
 ## Online Application
 
-https://rocky-temple-04093.herokuapp.com/api/persons
+https://rocky-temple-04093.herokuapp.com/
