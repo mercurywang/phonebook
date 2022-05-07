@@ -1,13 +1,17 @@
 const express = require('express');
 const app = express();
 const morgan = require('morgan');
+const cors = require('cors');
 
+app.use(cors());
+app.use(express.static('build'));
 app.use(express.json());
+
 app.use(
   morgan('tiny', {
     skip: (request) => {
       return request.method === 'POST';
-    },
+    }
   })
 );
 
@@ -21,7 +25,7 @@ app.use(
   morgan(custom, {
     skip: (request) => {
       return request.method !== 'POST';
-    },
+    }
   })
 );
 
@@ -29,23 +33,23 @@ let persons = [
   {
     id: 1,
     name: 'Arto Hellas',
-    number: '040-123456',
+    number: '040-123456'
   },
   {
     id: 2,
     name: 'Ada Lovelace',
-    number: '39-44-5323523',
+    number: '39-44-5323523'
   },
   {
     id: 3,
     name: 'Dan Abramov',
-    number: '12-43-234345',
+    number: '12-43-234345'
   },
   {
     id: 4,
     name: 'Mary Poppendieck',
-    number: '39-23-6423122',
-  },
+    number: '39-23-6423122'
+  }
 ];
 
 app.get('/api/persons', (request, response) => {
@@ -97,7 +101,7 @@ app.post('/api/persons', (request, response) => {
 
   if (!body.name) {
     return response.status(400).json({
-      error: 'Name missing',
+      error: 'Name missing'
     });
   }
 
@@ -114,13 +118,14 @@ app.post('/api/persons', (request, response) => {
   const person = {
     name: body.name,
     number: body.number,
-    id: generateId(),
+    id: generateId()
   };
 
   persons = persons.concat(person);
   response.json(person);
 });
 
-const PORT = 3001;
-app.listen(PORT);
-console.log(`Server running on port ${PORT}`);
+const PORT = process.env.PORT || 3001;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
