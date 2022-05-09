@@ -31,13 +31,10 @@ app.use(
   })
 );
 
-let count = 0;
-
 app.get('/api/persons', (request, response) => {
   Person.find({})
     .then((data) => {
       response.json(data);
-      count = data.length;
     })
     .catch((error) => console.log(error));
 });
@@ -58,12 +55,14 @@ app.get('/api/persons/:id', (request, response, next) => {
 
 app.get('/info', (request, response) => {
   const date = new Date();
-  response.send(
-    `<div>
-      <p>Phonebook has info for ${count} people</p>
-      <p>${date}</p>
-    </div>`
-  );
+  Person.count({}).then((count) => {
+    response.send(
+      `<div>
+        <p>Phonebook has info for ${count} people</p>
+        <p>${date}</p>
+      </div>`
+    );
+  });
 });
 
 app.delete('/api/persons/:id', (request, response, next) => {
@@ -93,17 +92,9 @@ app.post('/api/persons', (request, response, next) => {
       response.json(savedAndFormattedPerson);
     })
     .catch((error) => next(error));
-
-  // person.save((error, savedPerson) => {
-  //   if (error) {
-  //     next(error);
-  //   } else {
-  //     response.json(savedPerson.toJSON());
-  //   }
-  // });
 });
 
-app.put('./api/persons/:id', (request, response, next) => {
+app.put('/api/persons/:id', (request, response, next) => {
   const body = request.body;
 
   const person = {
@@ -122,8 +113,6 @@ app.put('./api/persons/:id', (request, response, next) => {
 });
 
 const errorHandler = (error, request, response, next) => {
-  console.error(error.message);
-
   if (error.name === 'CastError' && error.kind === 'ObjectId') {
     return response.status(400).send({ error: 'malformatted id' });
   } else if (error.name === 'ValidationError') {
