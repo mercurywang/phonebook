@@ -31,10 +31,13 @@ app.use(
   })
 );
 
+let count = 0;
+
 app.get('/api/persons', (request, response) => {
   Person.find({})
     .then((data) => {
       response.json(data);
+      count = data.length;
     })
     .catch((error) => console.log(error));
 });
@@ -53,67 +56,69 @@ app.get('/api/persons/:id', (request, response, next) => {
     });
 });
 
-// app.get('/info', (request, response) => {
-//   const date = new Date();
-//   const count = persons.length;
-//   response.send(
-//     `<div>
-//       <p>Phonebook has info for ${count} people</p>
-//       <p>${date}</p>
-//     </div>`
-//   );
-// });
+app.get('/info', (request, response) => {
+  const date = new Date();
+  response.send(
+    `<div>
+      <p>Phonebook has info for ${count} people</p>
+      <p>${date}</p>
+    </div>`
+  );
+});
 
-// app.delete('/api/persons/:id', (request, response) => {
-//   const id = Number(request.params.id);
-//   const persons = persons.filter((person) => person.id !== id);
+app.delete('/api/persons/:id', (request, response, next) => {
+  Person.findByIdAndRemove(request.params.id)
+    .then((result) => {
+      response.status(204).end();
+    })
+    .catch((error) => next(error));
+});
 
-//   response.status(204).end();
-// });
-
-// const getRandomInt = (min, max) => {
-//   min = Math.ceil(min);
-//   max = Math.floor(max);
-
-//   return Math.floor(Math.random() * (max - min)) + min;
-// };
-
-// const generateId = () => {
-//   const id = getRandomInt(10000000, 200000000);
-//   return id;
-// };
-
-app.post('/api/persons', (request, response) => {
+app.post('/api/persons', (request, response, next) => {
   const body = request.body;
 
-  // if (!body.name) {
-  //   return response.status(400).json({
-  //     error: 'Name missing'
-  //   });
-  // }
-
-  // const nameAlreadyExists = persons.find(
-  //   (person) => person.name.toLowerCase() === body.name.toLowerCase()
-  // );
-
-  // if (nameAlreadyExists) {
-  //   return response
-  //     .status(400)
-  //     .json({ error: `${body.name} has already been added to the phonebook` });
-  // }
+  if (body.name === undefined) {
+    return response.status(400).json({ error: 'name missing' });
+  }
 
   const person = new Person({
     name: body.name,
     number: body.number
   });
 
-  person.save((error, data) => {
-    if (error) {
-      console.log(error);
-    } else {
-      response.json(data);
-    }
-  });
+  person
+    .save()
+    .then((savedPerson) => savedPerson.toJSON())
+    .then((savedAndFormattedPerson) => {
+      response.json(savedAndFormattedPerson);
+    })
+    .catch((error) => next(error));
+
+  // person.save((error, savedPerson) => {
+  //   if (error) {
+  //     next(error);
+  //   } else {
+  //     response.json(savedPerson.toJSON());
+  //   }
+  // });
+});
+
+app.put('./api/persons/:id', (request, response, next) => {
+  const body = request.body;
+
+  const person = {
+    name: body.name,
+    number: body.number
+  };
+
+  Person.findByIdAndUpdate(request.params.id, person, {
+    new: true,
+    runValidators: true
+  })
+    .then((updatedPerson) => {
+      response.json(updatedPerson);
+    })
+    .catch((error) => next(error));
 });
 
 const errorHandler = (error, request, response, next) => {
@@ -121,6 +126,8 @@ const errorHandler = (error, request, response, next) => {
 
   if (error.name === 'CastError' && error.kind === 'ObjectId') {
     return response.status(400).send({ error: 'malformatted id' });
+  } else if (error.name === 'ValidationError') {
+    return response.status(400).json({ error: error.message });
   }
   next(error);
 };
